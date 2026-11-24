@@ -1,0 +1,40 @@
+/* Custom Styling for DSP Web Voice Changer */
+
+/* Vertical Range Sliders for 5-Band Equalizer */
+.eq-vertical-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: slider-vertical;
+  width: 28px;
+  height: 105px;
+  cursor: pointer;
+  accent-color: #818cf8;
+}
+
+/* Preset Button Active States */
+.preset-btn.active {
+  border-color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+}
+
+.preset-btn.active span:first-child {
+  color: #34d399 !important;
+}
+
+/* Canvas Canvas Shadow Glow */
+canvas {
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.15));
+}
+
+/* Pulse animation for Recording */
+@keyframes recordPulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.recording-active #recDot {
+  background-color: #f43f5e;
+  animation: recordPulse 1s infinite ease-in-out;
+}

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSP Voice Changer & Equalizer | Tugas Akhir Pemrosesan Sinyal Digital</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            accent: {
+              500: '#8b5cf6',
+              600: '#7c3aed',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts & Custom CSS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-['Plus_Jakarta_Sans']">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            DSP Web Voice Changer
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">v2.0 Client-Side</span>
+          </h1>
+          <p class="text-xs text-slate-400">Tugas Akhir Pemrosesan Sinyal Digital • Konvolusi, Kausalitas & FFT</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button id="btnTeoriModal" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 shadow-sm">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Rumus & Teori DSP
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+
+    <!-- Top Status & Audio Source Bar -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+      <div class="flex flex-col lg:flex-row items-center justify-between gap-4">
+        
+        <!-- Input Sources -->
+        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <!-- Mic Toggle -->
+          <button id="btnMicToggle" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
+            <svg id="iconMic" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" />
+            </svg>
+            <span id="labelMic">Aktifkan Live Mic</span>
+          </button>
+
+          <!-- File Upload -->
+          <label class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-semibold text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 cursor-pointer transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <span>Upload Audio (WAV/MP3)</span>
+            <input type="file" id="audioFileInput" accept="audio/*" class="hidden" />
+          </label>
+
+          <!-- Play/Pause File (Hidden initially) -->
+          <div id="fileControls" class="hidden flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700">
+            <button id="btnPlayFile" class="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition" title="Play">
+              <svg id="iconPlay" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </button>
+            <button id="btnStopFile" class="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition" title="Stop">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 6h12v12H6z" />
+              </svg>
+            </button>
+            <span id="fileNameDisplay" class="text-xs text-slate-300 max-w-[120px] truncate">file.mp3</span>
+          </div>
+        </div>
+
+        <!-- Recording & Output Controls -->
+        <div class="flex items-center gap-3 w-full lg:w-auto justify-end">
+          <button id="btnRecordToggle" class="px-4 py-2.5 rounded-xl font-semibold text-sm bg-rose-600/90 hover:bg-rose-500 text-white transition flex items-center gap-2 shadow-lg shadow-rose-600/20">
+            <span id="recDot" class="w-2.5 h-2.5 rounded-full bg-white"></span>
+            <span id="labelRecord">Rekam Output</span>
+          </button>
+          <a id="btnDownloadRecord" class="hidden px-4 py-2.5 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download WAV
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Realtime Audio Engine Status Badge -->
+      <div class="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Audio Engine Status: <strong id="engineStatusText" class="text-slate-200">Siap</strong></span>
+          <span class="text-slate-600">•</span>
+          <span>Sample Rate: <strong id="sampleRateText" class="text-slate-300">48,000 Hz</strong></span>
+          <span class="text-slate-600">•</span>
+          <span>Buffer/FFT: <strong class="text-slate-300">1024 points</strong></span>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <span>Visualizer Mode:</span>
+            <select id="selectVisualizerMode" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-slate-200 text-xs focus:ring-1 focus:ring-emerald-500">
+              <option value="bars">FFT Spectrum Bars</option>
+              <option value="line">Spectrum Area/Curve</option>
+              <option value="wave">Waveform Time-Domain</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spectrum Visualizer Section: INPUT vs OUTPUT (FFT) -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <!-- Input Spectrum -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50"></span>
+            <h2 class="text-sm font-bold text-white tracking-wide uppercase">Spektrum Sinyal Input (X[k])</h2>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50">Sebelum Filter</span>
+        </div>
+        <div class="relative h-44 sm:h-52 w-full bg-slate-950/80 rounded-xl overflow-hidden border border-slate-800/80">
+          <canvas id="canvasInputSpectrum" class="w-full h-full block"></canvas>
+          <div class="absolute bottom-1 right-2 text-[10px] text-slate-500 font-mono">0 Hz — 20 kHz</div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">
+          Representasi FFT sinyal suara mentah langsung dari mikrofon/file input.
+        </p>
+      </div>
+
+      <!-- Output Spectrum -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-violet-400 shadow-sm shadow-violet-400/50"></span>
+            <h2 class="text-sm font-bold text-white tracking-wide uppercase">Spektrum Sinyal Output (Y[k])</h2>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded bg-violet-950 text-violet-300 border border-violet-800/50">Setelah Filter & EQ</span>
+        </div>
+        <div class="relative h-44 sm:h-52 w-full bg-slate-950/80 rounded-xl overflow-hidden border border-slate-800/80">
+          <canvas id="canvasOutputSpectrum" class="w-full h-full block"></canvas>
+          <div class="absolute bottom-1 right-2 text-[10px] text-slate-500 font-mono">0 Hz — 20 kHz</div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">
+          Respon frekuensi terkonvolusi dengan filter kausal, efek echo/delay, dan 5-band EQ.
+        </p>
+      </div>
+    </section>
+
+    <!-- Main DSP Controls: Voice Presets, Audio Effects, and 5-Band Equalizer -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Column 1: Voice Changer Presets (5 cols) -->
+      <section class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Voice Changer Presets
+            </h2>
+            <span class="text-[11px] font-mono text-emerald-400/80 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/30">Formant & Modulation</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3" id="presetButtonsContainer">
+            <!-- Normal -->
+            <button data-preset="normal" class="preset-btn active flex flex-col items-start p-3 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700/80 transition text-left group">
+              <div class="flex items-center justify-between w-full mb-1">
+                <span class="text-sm font-bold text-white group-hover:text-emerald-300">Normal</span>
+                <span class="text-xs">🎙️</span>
+              </div>
+              <span class="text-[11px] text-slate-400">Suara asli tanpa pengubah karakter</span>
+            </button>
+
+            <!-- Robot -->
+            <button data-preset="robot" class="preset-btn flex flex-col items-start p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition text-left group">
+              <div class="flex items-center justify-between w-full mb-1">
+                <span class="text-sm font-bold text-slate-200 group-hover:text-emerald-300">Robot</span>
+                <span class="text-xs">🤖</span>
+              </div>
+              <span class="text-[11px] text-slate-400">Ring modulation 50Hz + comb filter</span>
+            </button>
+
+            <!-- Laki-Laki -->
+            <button data-preset="male" class="preset-btn flex flex-col items-start p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition text-left group">
+              <div class="flex items-center justify-between w-full mb-1">
+                <span class="text-sm font-bold text-slate-200 group-hover:text-emerald-300">Laki-Laki</span>
+                <span class="text-xs">👨</span>
+              </div>
+              <span class="text-[11px] text-slate-400">Formant pitch down + resonansi dada</span>
+            </button>
+
+            <!-- Perempuan -->
+            <button data-preset="female" class="preset-btn flex flex-col items-start p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition text-left group">
+              <div class="flex items-center justify-between w-full mb-1">
+                <span class="text-sm font-bold text-slate-200 group-hover:text-emerald-300">Perempuan</span>
+                <span class="text-xs">👩</span>
+              </div>
+              <span class="text-[11px] text-slate-400">Formant pitch up + high-pass filter</span>
+            </button>
+
+            <!-- Pak Jokowi (DSP Formant) -->
+            <button data-preset="jokowi" class="preset-btn flex flex-col items-start p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition text-left group">
+              <div class="flex items-center justify-between w-full mb-1">
+                <span class="text-sm font-bold text-slate-200 group-hover:text-emerald-300">Pak Jokowi</span>
+                <span class="text-xs">🇮🇩</span>
+              </div>
+              <span class="text-[11px] text-slate-400">Formant vokal 1.8kHz + kompresi santai</span>
+            </button>
+
+            <!-- Pak Prabowo (DSP Formant) -->
+            <button data-preset="prabowo" class="preset-btn flex flex-col items-start p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800 transition text-left group">
+              <div class="flex items-center justify-between w-full mb-1">
+                <span class="text-sm font-bold text-slate-200 group-hover:text-emerald-300">Pak Prabowo</span>
+                <span class="text-xs">🎖️</span>
+              </div>
+              <span class="text-[11px] text-slate-400">Resonansi dada 180Hz + soft-saturation</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-4 p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-400">
+          <span class="font-semibold text-slate-300">Keterangan DSP:</span> Karakter suara dibentuk murni melalui manipulasi koefisien filter kausal $H(z)$, modulasi sinyal pembawa, dan pergeseran formants saluran vokal (vocal tract).
+        </div>
+      </section>
+
+      <!-- Column 2: Audio Effects (Echo & Delay) (3 cols) -->
+      <section class="lg:col-span-3 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Efek Audio
+            </h2>
+            <span class="text-[11px] font-mono text-cyan-400/80 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30">Delay & Echo</span>
+          </div>
+
+          <!-- Echo Control -->
+          <div class="mb-5 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-semibold text-slate-200 flex items-center gap-1.5">
+                <span>1. Echo Effect</span>
+              </span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggleEcho" class="sr-only peer" />
+                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+            
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-slate-400">
+                <span>Echo Intensity</span>
+                <span id="echoFeedbackVal" class="font-mono text-cyan-400">35%</span>
+              </div>
+              <input type="range" id="sliderEchoFeedback" min="0" max="85" value="35" class="w-full accent-cyan-500 cursor-pointer" />
+            </div>
+          </div>
+
+          <!-- Delay Control -->
+          <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-semibold text-slate-200 flex items-center gap-1.5">
+                <span>2. Delay Buffer</span>
+              </span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggleDelay" class="sr-only peer" />
+                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-slate-400">
+                <span>Delay Time (ms)</span>
+                <span id="delayTimeVal" class="font-mono text-cyan-400">280 ms</span>
+              </div>
+              <input type="range" id="sliderDelayTime" min="50" max="800" step="10" value="280" class="w-full accent-cyan-500 cursor-pointer" />
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs text-slate-400">
+                <span>Feedback (Causal Memory)</span>
+                <span id="delayFeedbackVal" class="font-mono text-cyan-400">40%</span>
+              </div>
+              <input type="range" id="sliderDelayFeedback" min="0" max="80" value="40" class="w-full accent-cyan-500 cursor-pointer" />
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 text-[11px] text-slate-500">
+          *Persamaan beda: <span class="font-mono text-slate-400">y[n] = x[n] + α·y[n - D]</span>
+        </div>
+      </section>
+
+      <!-- Column 3: 5-Band Equalizer (4 cols) -->
+      <section class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+              5-Band Equalizer
+            </h2>
+            <button id="btnResetEQ" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold px-2 py-0.5 rounded bg-indigo-950/60 border border-indigo-800/40 transition">
+              Reset Flat
+            </button>
+          </div>
+
+          <!-- 5 Vertical Sliders -->
+          <div class="grid grid-cols-5 gap-2 h-48 py-2 px-1 bg-slate-950/70 rounded-xl border border-slate-800 items-end justify-items-center">
+            
+            <!-- Band 1: 100 Hz -->
+            <div class="flex flex-col items-center h-full justify-between">
+              <span id="eqVal0" class="text-[10px] font-mono text-slate-300">0dB</span>
+              <input type="range" orient="vertical" id="eqSlider0" min="-15" max="15" value="0" step="1" class="eq-vertical-slider" />
+              <div class="text-center">
+                <div class="text-[10px] font-bold text-indigo-300">100Hz</div>
+                <div class="text-[9px] text-slate-500">Bass</div>
+              </div>
+            </div>
+
+            <!-- Band 2: 350 Hz -->
+            <div class="flex flex-col items-center h-full justify-between">
+              <span id="eqVal1" class="text-[10px] font-mono text-slate-300">0dB</span>
+              <input type="range" orient="vertical" id="eqSlider1" min="-15" max="15" value="0" step="1" class="eq-vertical-slider" />
+              <div class="text-center">
+                <div class="text-[10px] font-bold text-indigo-300">350Hz</div>
+                <div class="text-[9px] text-slate-500">Low-Mid</div>
+              </div>
+            </div>
+
+            <!-- Band 3: 1 kHz -->
+            <div class="flex flex-col items-center h-full justify-between">
+              <span id="eqVal2" class="text-[10px] font-mono text-slate-300">0dB</span>
+              <input type="range" orient="vertical" id="eqSlider2" min="-15" max="15" value="0" step="1" class="eq-vertical-slider" />
+              <div class="text-center">
+                <div class="text-[10px] font-bold text-indigo-300">1kHz</div>
+                <div class="text-[9px] text-slate-500">Mid</div>
+              </div>
+            </div>
+
+            <!-- Band 4: 3.5 kHz -->
+            <div class="flex flex-col items-center h-full justify-between">
+              <span id="eqVal3" class="text-[10px] font-mono text-slate-300">0dB</span>
+              <input type="range" orient="vertical" id="eqSlider3" min="-15" max="15" value="0" step="1" class="eq-vertical-slider" />
+              <div class="text-center">
+                <div class="text-[10px] font-bold text-indigo-300">3.5kHz</div>
+                <div class="text-[9px] text-slate-500">Hi-Mid</div>
+              </div>
+            </div>
+
+            <!-- Band 5: 8 kHz -->
+            <div class="flex flex-col items-center h-full justify-between">
+              <span id="eqVal4" class="text-[10px] font-mono text-slate-300">0dB</span>
+              <input type="range" orient="vertical" id="eqSlider4" min="-15" max="15" value="0" step="1" class="eq-vertical-slider" />
+              <div class="text-center">
+                <div class="text-[10px] font-bold text-indigo-300">8kHz</div>
+                <div class="text-[9px] text-slate-500">Treble</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="mt-3 text-[11px] text-slate-500">
+          Filter Biquad Kausal orde-2 berjenjang (Cascaded Direct Form II).
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Modal Rumus & Teori DSP -->
+  <div id="modalTeori" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 max-w-3xl w-full max-h-[85vh] overflow-y-auto rounded-2xl p-6 shadow-2xl relative">
+      <button id="btnCloseModal" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <h2 class="text-xl font-bold text-white mb-1 flex items-center gap-2">
+        <span>📐</span> Dasar Teori & Persamaan Matematis DSP
+      </h2>
+      <p class="text-xs text-slate-400 mb-6">Penjelasan ilmiah untuk Tugas Akhir Mata Kuliah Pemrosesan Sinyal Digital.</p>
+
+      <div class="space-y-6 text-sm text-slate-300">
+        
+        <!-- 1. Konvolusi -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <h3 class="font-bold text-emerald-400 text-base mb-2">1. Konvolusi Waktu Diskrit (Discrete Convolution)</h3>
+          <p class="text-xs leading-relaxed mb-3">
+            Sinyal output \( y[n] \) dari sistem LTI (Linear Time-Invariant) merupakan hasil operasi konvolusi antara sinyal input \( x[n] \) dengan respon impuls sistem \( h[n] \):
+          </p>
+          <div class="bg-slate-900 p-3 rounded-lg font-mono text-center text-emerald-300 text-sm overflow-x-auto">
+            y[n] = x[n] * h[n] = ∑ [k = -∞ sampai ∞] x[k] · h[n - k]
+          </div>
+          <p class="text-xs text-slate-400 mt-2">
+            Pada web ini, konvolusi digunakan untuk menghitung efek reverberasi dan pemfilteran respon impuls audio.
+          </p>
+        </div>
+
+        <!-- 2. Kausalitas -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <h3 class="font-bold text-cyan-400 text-base mb-2">2. Sistem Kausal (Causality & Difference Equation)</h3>
+          <p class="text-xs leading-relaxed mb-3">
+            Suatu sistem dikatakan <strong>kausal</strong> jika keluarannya pada sembarang waktu \( n \) hanya bergantung pada nilai masukan saat ini dan masa lalu, bukan masa depan:
+          </p>
+          <div class="bg-slate-900 p-3 rounded-lg font-mono text-center text-cyan-300 text-xs sm:text-sm overflow-x-auto">
+            h[n] = 0, untuk n &lt; 0
+          </div>
+          <p class="text-xs text-slate-300 mt-3 mb-2">
+            Implementasi filter IIR (Infinite Impulse Response) dan Biquad Equalizer diturunkan dari persamaan beda kausal:
+          </p>
+          <div class="bg-slate-900 p-3 rounded-lg font-mono text-center text-cyan-300 text-xs sm:text-sm overflow-x-auto">
+            y[n] = b₀·x[n] + b₁·x[n-1] + b₂·x[n-2] - a₁·y[n-1] - a₂·y[n-2]
+          </div>
+          <p class="text-xs text-slate-400 mt-2">
+            Dan untuk efek Echo/Delay kausal dengan waktu tunda \( D \) sampel dan gain feedback \( \alpha \):
+          </p>
+          <div class="bg-slate-900 p-3 rounded-lg font-mono text-center text-cyan-300 text-xs sm:text-sm overflow-x-auto">
+            y[n] = x[n] + α · y[n - D]
+          </div>
+        </div>
+
+        <!-- 3. FFT -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <h3 class="font-bold text-violet-400 text-base mb-2">3. Fast Fourier Transform (FFT & Analisis Spektrum)</h3>
+          <p class="text-xs leading-relaxed mb-3">
+            Untuk memvisualisasikan spektrum sinyal suara masukan \( X[k] \) dan keluaran \( Y[k] \), dilakukan transformasi dari domain waktu ke domain frekuensi menggunakan algoritma Discrete Fourier Transform (DFT) cepat berukuran \( N = 1024 \) titik:
+          </p>
+          <div class="bg-slate-900 p-3 rounded-lg font-mono text-center text-violet-300 text-sm overflow-x-auto">
+            X[k] = ∑ [n = 0 sampai N-1] x[n] · e^(-j · 2π · k · n / N)
+          </div>
+          <p class="text-xs text-slate-300 mt-3 mb-2">
+            Besaran magnitudo spektrum (dalam satuan desibel/dB) yang digambar pada canvas:
+          </p>
+          <div class="bg-slate-900 p-3 rounded-lg font-mono text-center text-violet-300 text-sm overflow-x-auto">
+            |X[k]| = √( Re(X[k])² + Im(X[k])² ), &nbsp; dB[k] = 20 · log₁₀(|X[k]|)
+          </div>
+        </div>
+
+        <!-- 4. Formant Shaping -->
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <h3 class="font-bold text-amber-400 text-base mb-2">4. DSP Formant Shaping (Pemodelan Suara Vokal)</h3>
+          <p class="text-xs leading-relaxed">
+            Saluran vokal manusia dimodelkan sebagai filter akustik dengan frekuensi resonansi alami (formants \( F_1, F_2, F_3 \)). Modifikasi pitch dan bobot penguatan pita formant tertentu memungkinkan transformasi timbre suara dari satu karakter ke karakter lainnya tanpa memerlukan inferensi neural network yang berat.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="mt-6 flex justify-end">
+        <button id="btnCloseModalBtn" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-700">
+          Tutup Jendela Teori
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950 py-4 text-center text-xs text-slate-500">
+    Proyek Tugas Akhir Pemrosesan Sinyal Digital • Dibuat dengan Web Audio API & HTML5 Canvas
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/dsp-engine.js"></script>
+  <script src="js/equalizer.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/visualizer.js"></script>
+  <script src="js/recorder.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
